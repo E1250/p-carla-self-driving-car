@@ -6,7 +6,7 @@ from Carla_Sim_Project.config.settings import get_settings
 config = get_settings()
 
 
-carla_client = CarlaClient()
+carla_client = CarlaClient(cfg=config)
 carla_client.clear_world()
 carla_client.info()
 
