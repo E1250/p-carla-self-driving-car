@@ -1,12 +1,12 @@
 carla_client:
-  no_rendering_mode:False  # true, false
-  carla_client_port:2000
-  carla_connection_timeout:10
-  synchronous_mode:true  # true, false
-  fixed_delta_seconds:0.05  # Float
-  
+  no_rendering_mode: False  # true, false
+  synchronous_mode: True  # true, false
+  carla_connection_timeout: 10
+  fixed_delta_seconds: 0.05  # Float
+  carla_client_port: 2000
+
 vehicle:
-  spectator_mode:False  # true, false
-  output_dir:"" 
-  warmup_ticks:20
-  vehicle_blueprint_id:""
+  vehicle_blueprint_id: ""
+  spectator_mode: False  # true, false
+  warmup_ticks: 20
+  output_dir: "" 

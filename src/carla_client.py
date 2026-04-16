@@ -1,15 +1,18 @@
 import carla
 
+from Carla_Sim_Project.config.settings import get_settings
+configs = get_settings()
+
 class CarlaClient():
     def __set_world_settings(self):
-        self.world_settings.no_rendering_mode = False
-        self.world_settings.synchronous_mode = True
-        self.world_settings.fixed_delta_seconds = 0.05
+        self.world_settings.no_rendering_mode = configs.carla_client.no_rendering_mode
+        self.world_settings.synchronous_mode = configs.carla_client.synchronous_mode
+        self.world_settings.fixed_delta_seconds = configs.carla_client.fixed_delta_seconds
         
     def __init__(self):
         # Connect to Carla sim
-        self.client = carla.Client("localhost", 2000)
-        self.client.set_timeout(10)
+        self.client = carla.Client("localhost", configs.carla_client.carla_client_port)
+        self.client.set_timeout(configs.carla_client.carla_connection_timeout)
 
         self.world = self.client.get_world()
         self.world_name = self.world.get_map().name

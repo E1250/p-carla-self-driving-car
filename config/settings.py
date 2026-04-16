@@ -1,19 +1,28 @@
-from pydantic import BaseMode
+from pydantic import BaseModel
+from pathlib import Path
+import yaml
 
-class CarlaModel(BaseModel):
-    no_rendering_mode:bool
-    synchronous_mode:bool
-    carla_connection_timeout:int
-    fixed_delta_seconds=float
-    carla_client_port:int
+from models import CarlaModel, VehicleModel
+from functools import lru_cache
 
-class VehicleModel(BaseModel):
-    vehicle_blueprint_id:str
-    spectator_mode:bool
-    warmup_ticks:int
-    output_dir:str
-
-
-class Settings():
+class Settings(BaseModel):
     carla_client:CarlaModel
     vehicle:VehicleModel
+
+    # We don't need .env here, No need for SettingsConfigDict and settings_customise_source
+    @classmethod
+    def from_yaml(cls, yaml_path=Path(__file__).parent / "settings.yaml"):
+        with open(yaml_path) as f:
+            data = yaml.safe_load(f)
+        return cls(**data)
+
+
+@lru_cache(maxsize=1)
+def get_settings():
+    """Dependency Injection alternative, cache the output of this return, and return each time."""
+    return Settings.from_yaml()
+
+
+if __name__ == "__main__":
+    configs = get_settings()
+    print(configs)

@@ -2,8 +2,9 @@ from src.data_collector import DataCollector
 from src.vehicle import Vehicle
 from src.carla_client import CarlaClient
 
-import carla
-import pandas as pd
+from Carla_Sim_Project.config.settings import get_settings
+config = get_settings()
+
 
 carla_client = CarlaClient()
 carla_client.clear_world()
@@ -12,7 +13,7 @@ carla_client.info()
 world = carla_client.world
 
 # Now we need to select a car from the list above
-tesla_vehicle = Vehicle(blueprint_id="vehicle.tesla.model3", world=world)
+tesla_vehicle = Vehicle(world=world)
 imu_sensor = tesla_vehicle.create_and_attach("sensor.other.imu")
 rgb_sensor = tesla_vehicle.create_and_attach("sensor.camera.rgb")
 

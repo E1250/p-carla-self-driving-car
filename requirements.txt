@@ -7,3 +7,5 @@ h5py
 
 # Logging
 loguru
+pyyaml
+#// pydantic_settings

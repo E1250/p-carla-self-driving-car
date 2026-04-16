@@ -1,8 +1,12 @@
 import random
 import carla
 
+from Carla_Sim_Project.config.settings import get_settings
+
+config = get_settings()
+
 class Vehicle():
-    def __init__(self, blueprint_id:str, world):
+    def __init__(self, world, blueprint_id:str=config.vehicle.vehicle_blueprint_id):
         self.blueprint_id = blueprint_id
         self.world = world
         self.blueprint_library = world.get_blueprint_library()
