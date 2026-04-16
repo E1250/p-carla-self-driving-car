@@ -25,4 +25,5 @@ def get_settings():
 
 if __name__ == "__main__":
     configs = get_settings()
+    print(type(configs))
     print(configs)

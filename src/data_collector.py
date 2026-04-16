@@ -2,11 +2,12 @@ import pandas as pd
 from pathlib import Path
 import carla
 
-from Carla_Sim_Project.config.settings import get_settings
-config = get_settings()
+from Carla_Sim_Project.config.settings import Settings
+from Carla_Sim_Project.src.vehicle import Vehicle
 
 class DataCollector():
-    def __init__(self, world, vehicle):
+    def __init__(self, world, vehicle:Vehicle, cfg:Settings):
+        self.config=cfg
         self.world = world
         self.vehicle = vehicle
         self.imu_collected_data = []
@@ -35,14 +36,14 @@ class DataCollector():
             "filename": f"img_{rgb_data.frame}.png"
         })
    
-    def __warmup_ticks(self, ticks:int=config.vehicle.warmup_ticks):
+    def __warmup_ticks(self, ticks:int|None=None):
         """Warmup ticks to avoid garbage sensor readings of spawns"""
-        for _ in range(ticks): self.world.tick()
+        for _ in range(ticks or self.config.vehicle.warmup_ticks): self.world.tick()
         self.imu_collected_data.clear()
         self.rgb_collected_data.clear()
 
 
-    def run(self, spectator_mode:bool=config.vehicle.spectator_mode):
+    def run(self, spectator_mode:bool|None=None):
         self.__warmup_ticks()
 
         control = carla.VehicleControl()
@@ -63,7 +64,7 @@ class DataCollector():
 
             
             self.vehicle.apply_control(control)
-            if spectator_mode:
+            if spectator_mode or self.config.vehicle.spectator_mode:
                 vehicle_transform = self.vehicle.get_transform()
                 self.spectator.set_transform(
                     carla.Transform(vehicle_transform.location + carla.Location(x=-8, z=4), carla.Rotation(pitch=-15))

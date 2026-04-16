@@ -14,3 +14,5 @@ and thing which is see is the most important is trying to open carla on my machi
 
 Physics initialization artifact, when an object respawn at any world, it shows some physics values, we remove them. 
 The solution is two things here, either filtering data later, or just wait couple of seconds until object respawn and then start collecting. it is call **warmup period**
+
+also it was about creating the yaml file, i created it and my question were should i use settings as a defual value? or pass them as i was advised to do so. 

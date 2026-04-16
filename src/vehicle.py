@@ -1,13 +1,12 @@
 import random
 import carla
 
-from Carla_Sim_Project.config.settings import get_settings
-
-config = get_settings()
+from Carla_Sim_Project.config.settings import Settings
 
 class Vehicle():
-    def __init__(self, world, blueprint_id:str=config.vehicle.vehicle_blueprint_id):
-        self.blueprint_id = blueprint_id
+    def __init__(self, world, cfg:Settings, blueprint_id:str|None=None):
+        self.config = cfg
+        self.blueprint_id = blueprint_id or self.config.vehicle.vehicle_blueprint_id
         self.world = world
         self.blueprint_library = world.get_blueprint_library()
         self.vehicle = self.__respawn_vehicle(blueprint_id)
