@@ -1,1 +1,5 @@
 [ ] which is better, each class represents one vehicle, so the type of the intance is a vehicle, or just one instance that create multiple instances by passing vehicle id
+
+[X] Next time, implement run in data collector, then collect more data as advised, then attach the spectator into the car. 
+
+[ ] Implement and collect also frames, rbg, make sure both have the same timestamp

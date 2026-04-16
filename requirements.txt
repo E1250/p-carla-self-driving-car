@@ -1,3 +1,9 @@
+# Core
 G:\MyComputer\Robotics Wrolds\CARLA_0.9.13\PythonAPI\carla\dist\carla-0.9.13-cp37-cp37m-win_amd64.whl
 pandas
 pyarrow 
+pydantic
+h5py
+
+# Logging
+loguru

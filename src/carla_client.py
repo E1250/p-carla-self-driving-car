@@ -1,12 +1,11 @@
 import carla
 
-
 class CarlaClient():
     def __set_world_settings(self):
         self.world_settings.no_rendering_mode = False
         self.world_settings.synchronous_mode = True
         self.world_settings.fixed_delta_seconds = 0.05
-
+        
     def __init__(self):
         # Connect to Carla sim
         self.client = carla.Client("localhost", 2000)
@@ -20,7 +19,10 @@ class CarlaClient():
         self.__set_world_settings()
         self.world.apply_settings(self.world_settings)
 
-    def info(self):
+    def info(self) -> None:
+        """Printing the world name, and the list of supported sensors in this world
+           Blueprint is like modules or designs for sensors and vehicles
+        """
         print(self.world_name)
         self.get_filtered_blueprint(bp_filter="sensor.*")
     
@@ -29,4 +31,9 @@ class CarlaClient():
         for item in self.world.get_blueprint_library().filter(bp_filter):
             print(item.id)
 
-    
+    def clear_world(self):
+        """Remove existing vehicles in the world, could be reset for the world
+        You must declare a filter or it will remove everything from the world
+        """
+        actors = self.world.get_actors().filter("vehicle.*")
+        for actor in actors: actor.destroy()

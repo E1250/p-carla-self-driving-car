@@ -5,8 +5,8 @@ class Vehicle():
     def __init__(self, blueprint_id:str, world):
         self.blueprint_id = blueprint_id
         self.world = world
-        self.vehicle = self.__respawn_vehicle(blueprint_id)
         self.blueprint_library = world.get_blueprint_library()
+        self.vehicle = self.__respawn_vehicle(blueprint_id)
         self.attached_objects = []
 
     def __respawn_vehicle(self, blueprint_id:str):
