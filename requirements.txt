@@ -9,3 +9,6 @@ h5py
 loguru
 pyyaml
 #// pydantic_settings
+
+opencv-python
+tqdm

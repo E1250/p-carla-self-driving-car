@@ -1,3 +1,4 @@
+import shutil
 import pandas as pd
 from pathlib import Path
 import carla
@@ -5,6 +6,13 @@ import carla
 from config.settings import Settings
 from src.vehicle import Vehicle
 from typing import Optional
+
+from utils.cv_render import cv_frame_renderer
+import glob 
+import os
+import cv2 as cv
+from tqdm import tqdm
+import time 
 
 class DataCollector():
     def __init__(self, world, vehicle:Vehicle, cfg:Settings):
@@ -14,6 +22,7 @@ class DataCollector():
         self.imu_collected_data = []
         self.rgb_collected_data = []
         self.spectator = self.world.get_spectator()
+        self.output_path = Path(__file__).parent.parent / self.config.vehicle.output_dir
 
     def collect_imu(self, imu_data:carla.libcarla.ServerSideSensor):
         """Exact data being collected"""
@@ -28,8 +37,10 @@ class DataCollector():
         })
 
     def collect_rgb(self, rgb_data:carla.libcarla.ServerSideSensor):
-        frame_path =   Path(__file__).parent / "data" /  "frames" / f"img_{rgb_data.frame}.png"
+        frame_path = str(self.output_path / "frames" / f"img_{rgb_data.frame}.png")
         rgb_data.save_to_disk(frame_path)
+
+        if self.config.carla_client.cv_render_debug: cv_frame_renderer(rgb_data)
 
         self.rgb_collected_data.append({
             "timestamp": rgb_data.timestamp,
@@ -39,24 +50,34 @@ class DataCollector():
    
     def __warmup_ticks(self, ticks:Optional[int]=None):
         """Warmup ticks to avoid garbage sensor readings of spawns"""
-        for _ in range(ticks or self.config.vehicle.warmup_ticks): self.world.tick()
+        warmup_ticks = ticks or self.config.vehicle.warmup_ticks
+        print(f"Warming env up with {warmup_ticks} ticks")
+        for _ in tqdm(range(warmup_ticks), "Warmup..."): self.world.tick()
+        
+    
+    def __clear_outdir(self, run_name:str):
+        """Clean after warmups, and empty frames dir from the previous run"""
+        # Clear after warmup
         self.imu_collected_data.clear()
         self.rgb_collected_data.clear()
 
+        # Create experiment folder.
+        os.makedirs(str(self.output_path / run_name), exist_ok=True)
 
-    def run(self, spectator_mode:Optional[bool]=None):
+
+    def run(self, run_name:str, spectator_mode:Optional[bool]=None):
         self.__warmup_ticks()
+        self.__clear_outdir(run_name=run_name)
 
         control = carla.VehicleControl()
-
-        for i in range(1000):
-            if i < 50:
+        for i in tqdm(range(1000), "Collecting"):
+            if i < 1_000:
                 control.throttle = 0.5
                 control.steer = 0
-            elif i < 100:
+            elif i < 1_500:
                 control.throttle = 0.3
                 control.steer = -0.3
-            elif i < 150:
+            elif i < 5_000:
                 control.throttle = 0.3
                 control.steer = 0.3
             # else:
@@ -65,6 +86,8 @@ class DataCollector():
 
             
             self.vehicle.apply_control(control)
+
+            # Attach spectator camera. 
             if spectator_mode or self.config.vehicle.spectator_mode:
                 vehicle_transform = self.vehicle.get_transform()
                 self.spectator.set_transform(
@@ -72,19 +95,29 @@ class DataCollector():
                 )
             self.world.tick()
 
+        # time.sleep(5)
+        run_path = self.output_path / run_name
+        self.export_fuse_sensor(export_path=run_path, export_name=f"{run_name}.parquet")
+        # self.__cv_video_renderer(export_path=run_path)  # Export frames into a video
 
-    def export_imu_parquet(self, export_path:str):
-        """Export collected imu data parquet"""
-        df = pd.DataFrame(self.imu_collected_data)
-        df.to_parquet(export_path, index=False)
-    
-    def export_rgb_parquet(self, export_path:str):
-        """Export collected rgb data parquet"""
-        df = pd.DataFrame(self.rgb_collected_data)
-        df.to_parquet(export_path, index=False)
-
-    def fuse_sensor(self, tolerance=0.05):
+    def export_fuse_sensor(self, export_path:Path, export_name:str, tolerance=0.05):
         imu_df = pd.DataFrame(self.imu_collected_data).sort_values("timestamp")
         camera_df = pd.DataFrame(self.rgb_collected_data).sort_values("timestamp")
 
-        return pd.merge_asof(imu_df, camera_df, on="timestamp", tolerance=tolerance, direction="nearest")
+        merged_df = pd.merge_asof(imu_df, camera_df, on="timestamp", tolerance=tolerance, direction="nearest")
+        print(camera_df)
+        print(camera_df.info())
+        imu_df.to_parquet(str(export_path / "1.parquet"), index=False)
+        camera_df.to_parquet(str(export_path / "2.parquet"), index=False)
+        merged_df.to_parquet(str(export_path / export_name), index=False)
+
+    def __cv_video_renderer(self, export_path:Path):
+        frames_dir = str(self.output_path / "frames")
+        frames = sorted(glob.glob(os.path.join(frames_dir, "*.png")))
+
+        h, w, _ = cv.imread(frames[0]).shape
+        video_writer = cv.VideoWriter(str(export_path / "run_video.mp4"), cv.VideoWriter_fourcc(*"mp4v"), 20, (w, h))
+        for f in frames: video_writer.write(cv.imread(f))
+        video_writer.release()
+
+        print(f"Saved {len(frames)} frames to {export_path}")

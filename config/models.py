@@ -6,6 +6,7 @@ class CarlaModel(BaseModel):
     carla_connection_timeout: int
     fixed_delta_seconds: float
     carla_client_port: int
+    cv_render_debug: bool
 
 class VehicleModel(BaseModel):
     vehicle_blueprint_id: str

@@ -2,8 +2,15 @@ from src.data_collector import DataCollector
 from src.vehicle import Vehicle
 from src.carla_client import CarlaClient
 from config.settings import get_settings
+import os
+import shutil
 
 config = get_settings()
+
+# Clear previous run frames
+os.makedirs(r"G:\MyComputer\Robotics Wrolds\CARLA_0.9.13\Carla_Sim_Project\data\frames", exist_ok=True)
+shutil.rmtree(r"G:\MyComputer\Robotics Wrolds\CARLA_0.9.13\Carla_Sim_Project\data\frames")
+os.makedirs(r"G:\MyComputer\Robotics Wrolds\CARLA_0.9.13\Carla_Sim_Project\data\frames")
 
 carla_client = CarlaClient(cfg=config)
 carla_client.clear_world()
@@ -21,9 +28,6 @@ imu_sensor.listen(data_collector.collect_imu)  # Wait and printing the data
 rgb_sensor.listen(data_collector.collect_rgb)  # Wait and printing the data
 
 try: 
-    data_collector.run()
+    data_collector.run(run_name="run1")
 finally: 
     tesla_vehicle.destroy()
-
-print(data_collector.fuse_sensor())
-# data_collector.export_parquet("Carla_Sim_Project\data\imu_run1.parquet")

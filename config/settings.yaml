@@ -4,9 +4,10 @@ carla_client:
   carla_connection_timeout: 10
   fixed_delta_seconds: 0.05  # Float
   carla_client_port: 2000
+  cv_render_debug: False  # true, false
 
 vehicle:
   vehicle_blueprint_id: "vehicle.tesla.model3"
   spectator_mode: False  # true, false
-  warmup_ticks: 20
-  output_dir: "" 
+  warmup_ticks: 100
+  output_dir: "data/"

@@ -23,7 +23,7 @@ class Vehicle():
         """Create the blueprint object and attach it to this vehicle"""
         object_bp = self.blueprint_library.find(blueprint_id_to_attach)
         # Placing the imu sensor, on the car - It could be placed anywhere on the car, it doesn't have to be at a specific location
-        object_transform = carla.Transform(carla.Location(20, 0, 0)) # Center of the vechile
+        object_transform = carla.Transform(carla.Location(2, 0, 1.2)) # Center of the vechile
         attached_object = self.world.spawn_actor(object_bp, object_transform, attach_to=self.vehicle)
 
         self.attached_objects.append(attached_object)
