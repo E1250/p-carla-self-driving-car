@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from pathlib import Path
 import yaml
 
-from models import CarlaModel, VehicleModel
+from config.models import CarlaModel, VehicleModel
 from functools import lru_cache
 
 class Settings(BaseModel):

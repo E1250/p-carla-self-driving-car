@@ -2,8 +2,9 @@ import pandas as pd
 from pathlib import Path
 import carla
 
-from Carla_Sim_Project.config.settings import Settings
-from Carla_Sim_Project.src.vehicle import Vehicle
+from config.settings import Settings
+from src.vehicle import Vehicle
+from typing import Optional
 
 class DataCollector():
     def __init__(self, world, vehicle:Vehicle, cfg:Settings):
@@ -27,7 +28,7 @@ class DataCollector():
         })
 
     def collect_rgb(self, rgb_data:carla.libcarla.ServerSideSensor):
-        frame_path = fr"Carla_Sim_Project\data\frames\img_{rgb_data.frame}.png"
+        frame_path =   Path(__file__).parent / "data" /  "frames" / f"img_{rgb_data.frame}.png"
         rgb_data.save_to_disk(frame_path)
 
         self.rgb_collected_data.append({
@@ -36,14 +37,14 @@ class DataCollector():
             "filename": f"img_{rgb_data.frame}.png"
         })
    
-    def __warmup_ticks(self, ticks:int|None=None):
+    def __warmup_ticks(self, ticks:Optional[int]=None):
         """Warmup ticks to avoid garbage sensor readings of spawns"""
         for _ in range(ticks or self.config.vehicle.warmup_ticks): self.world.tick()
         self.imu_collected_data.clear()
         self.rgb_collected_data.clear()
 
 
-    def run(self, spectator_mode:bool|None=None):
+    def run(self, spectator_mode:Optional[bool]=None):
         self.__warmup_ticks()
 
         control = carla.VehicleControl()

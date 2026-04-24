@@ -1,6 +1,6 @@
 import carla
 
-from Carla_Sim_Project.config.settings import Settings
+from config.settings import Settings
 
 class CarlaClient():
     def __set_world_settings(self) -> None:
