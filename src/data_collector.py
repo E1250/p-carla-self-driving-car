@@ -1,4 +1,5 @@
-import shutil
+import queue
+import threading
 import pandas as pd
 from pathlib import Path
 import carla
@@ -7,12 +8,11 @@ from config.settings import Settings
 from src.vehicle import Vehicle
 from typing import Optional
 
-from utils.cv_render import cv_frame_renderer
 import glob 
 import os
 import cv2 as cv
 from tqdm import tqdm
-import time 
+import numpy as np
 
 class DataCollector():
     def __init__(self, world, vehicle:Vehicle, cfg:Settings):
@@ -23,6 +23,13 @@ class DataCollector():
         self.rgb_collected_data = []
         self.spectator = self.world.get_spectator()
         self.output_path = Path(__file__).parent.parent / self.config.vehicle.output_dir
+
+        self._frames_queue = queue.Queue() # Like the list, but more than one worker can adjust
+        self._writer_thread = threading.Thread( # assign this func to a worker to start in parallel
+            target=self.__frame_writer_worker, # Function name
+            daemon=True  # Close when app close.
+        )
+        self._writer_thread.start()  # Starting the thread.
 
     def collect_imu(self, imu_data:carla.libcarla.ServerSideSensor):
         """Exact data being collected"""
@@ -37,16 +44,35 @@ class DataCollector():
         })
 
     def collect_rgb(self, rgb_data:carla.libcarla.ServerSideSensor):
-        frame_path = str(self.output_path / "frames" / f"img_{rgb_data.frame}.png")
-        rgb_data.save_to_disk(frame_path)
+        """Collecting data and stack them in queue, and let a worker save frames sequestionally avoiding any frame being dropped"""
+        # rgb_data.save_to_disk(frame_path) # this one consume and block thread, and drop frames
+        img_array = np.frombuffer(rgb_data.raw_data, dtype=np.uint8)
+        img_array = img_array.reshape((rgb_data.height, rgb_data.width, 4))
+        img_array = img_array[:, :, :3] # Drop alpha
 
-        if self.config.carla_client.cv_render_debug: cv_frame_renderer(rgb_data)
+        img_metadata = (img_array, rgb_data.timestamp, rgb_data.frame) # (img, timestamp, frame)
+        self._frames_queue.put(img_metadata)  # Append into queue
 
-        self.rgb_collected_data.append({
-            "timestamp": rgb_data.timestamp,
-            "frame": rgb_data.frame,
-            "filename": f"img_{rgb_data.frame}.png"
-        })
+        # Render frames
+        if self.config.carla_client.cv_render_debug: 
+            cv.imshow("CARLA Camera", img_array)
+            cv.waitKey(1)
+
+    def __frame_writer_worker(self):
+        """Worker thread to save images in the queue"""
+        while True:
+            img_metadata = self._frames_queue.get()
+            img_array, timestamp, frame = img_metadata
+
+            frame_path = str(self.output_path / "frames" / f"img_{frame}.png")
+            cv.imwrite(frame_path, img_array)
+
+            self.rgb_collected_data.append({
+                "timestamp": timestamp,
+                "frame": frame,
+                "filename": f"img_{frame}.png"
+            })
+
    
     def __warmup_ticks(self, ticks:Optional[int]=None):
         """Warmup ticks to avoid garbage sensor readings of spawns"""
@@ -95,20 +121,20 @@ class DataCollector():
                 )
             self.world.tick()
 
-        # time.sleep(5)
+        # Wait until queue on thread is empty
+        self._frames_queue.put(None)  # Poison pill pattern
+        self._writer_thread.join()  # block main thread and Let writer thread finish first
+
         run_path = self.output_path / run_name
         self.export_fuse_sensor(export_path=run_path, export_name=f"{run_name}.parquet")
-        # self.__cv_video_renderer(export_path=run_path)  # Export frames into a video
+        self.__cv_video_renderer(export_path=run_path)  # Export frames into a video
 
     def export_fuse_sensor(self, export_path:Path, export_name:str, tolerance=0.05):
         imu_df = pd.DataFrame(self.imu_collected_data).sort_values("timestamp")
         camera_df = pd.DataFrame(self.rgb_collected_data).sort_values("timestamp")
 
         merged_df = pd.merge_asof(imu_df, camera_df, on="timestamp", tolerance=tolerance, direction="nearest")
-        print(camera_df)
-        print(camera_df.info())
-        imu_df.to_parquet(str(export_path / "1.parquet"), index=False)
-        camera_df.to_parquet(str(export_path / "2.parquet"), index=False)
+        print(merged_df.info())
         merged_df.to_parquet(str(export_path / export_name), index=False)
 
     def __cv_video_renderer(self, export_path:Path):
