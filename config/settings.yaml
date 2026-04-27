@@ -11,4 +11,4 @@ vehicle:
   output_dir: "data/"
   warmup_ticks: 100
   spectator_mode: True  # [true, false] - Keep it
-  autopilot: True # [true, false]
+  autopilot: False # [true, false]

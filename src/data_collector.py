@@ -97,38 +97,38 @@ class DataCollector():
                 carla.Transform(vehicle_transform.location + carla.Location(x=-8, z=4), carla.Rotation(pitch=-15))
             )
 
-    def custom_control(self, spectator_mode):
-        control = carla.VehicleControl()
-        for i in tqdm(range(1000), "Collecting"):
-            if i < 1_000:
-                control.throttle, control.steer = 0.5, 0
-            elif i < 1_500:
-                control.throttle, control.steer = 0.3, -0.3
-            elif i < 5_000:
-                control.throttle, control.steer = 0.3, 0.3
-            else:
-                control.throttle = 0
-                control.brake = 0.5
-            self.vehicle.vehicle.apply_control(control)
+    def custom_control(self, i):
+        control = self.vehicle.vehicle_control
+        if i < 100:
+            control.throttle, control.steer = 0.5, 0
+        elif i < 300:
+            control.throttle, control.steer = 0.3, -0.3
+        elif i < 400:
+            control.throttle, control.steer = 0.3, 0.3
+        else:
+            control.throttle = 0
+            control.brake = 0.5
+            
+        return control
 
-            self.update_spectator(spectator_mode)
-            self.world.tick()
-
-    def run(self, run_name:str, spectator_mode:Optional[bool]=None, autopilot:Optional[bool]=None):
+    def run(self, run_name:str, num_ticks:int=1000, spectator_mode:Optional[bool]=None, autopilot:Optional[bool]=None):
         self.__warmup_ticks()
         self.__clear_outdir(run_name=run_name)
 
         if autopilot or self.config.vehicle.autopilot:
             print("Autopilot is enabled..")
             with self.vehicle.autopilot():
-                for _ in tqdm(range(1000), "Collecting"):
+                for _ in tqdm(range(num_ticks), "Collecting"):
                     self.update_spectator(spectator_mode)
                     self.world.tick()
         else: 
             print("It is better to override the default custom_control function")
-            self.custom_control(spectator_mode)
+            for i in tqdm(range(num_ticks), "Collecting"):
+                control = self.custom_control(i)
+                self.vehicle.vehicle.apply_control(control)
+                self.update_spectator(spectator_mode)
+                self.world.tick()
 
-            
         # Wait until queue on thread is empty
         self._frames_queue.put(None)  # Poison pill pattern, Stoping the queue
         self._writer_thread.join()  # block main thread and Let writer thread finish first
