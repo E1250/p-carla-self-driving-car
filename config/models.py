@@ -13,3 +13,4 @@ class VehicleModel(BaseModel):
     spectator_mode: bool
     warmup_ticks: int
     output_dir: str
+    autopilot: bool

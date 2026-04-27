@@ -62,6 +62,7 @@ class DataCollector():
         """Worker thread to save images in the queue"""
         while True:
             img_metadata = self._frames_queue.get()
+            if img_metadata is None: break   # As you push None at the end to flush - Poison Pill pattern.
             img_array, timestamp, frame = img_metadata
 
             frame_path = str(self.output_path / "frames" / f"img_{frame}.png")
@@ -72,57 +73,64 @@ class DataCollector():
                 "frame": frame,
                 "filename": f"img_{frame}.png"
             })
-
    
     def __warmup_ticks(self, ticks:Optional[int]=None):
         """Warmup ticks to avoid garbage sensor readings of spawns"""
         warmup_ticks = ticks or self.config.vehicle.warmup_ticks
         print(f"Warming env up with {warmup_ticks} ticks")
         for _ in tqdm(range(warmup_ticks), "Warmup..."): self.world.tick()
-        
     
     def __clear_outdir(self, run_name:str):
         """Clean after warmups, and empty frames dir from the previous run"""
-        # Clear after warmup
+        #TODO, i am not sure if this really remove only the warmup ticks, due to the thread. 
         self.imu_collected_data.clear()
         self.rgb_collected_data.clear()
 
         # Create experiment folder.
         os.makedirs(str(self.output_path / run_name), exist_ok=True)
 
+    def update_spectator(self, spectator_mode:Optional[bool]=None):
+        # Attach spectator camera. 
+        if spectator_mode or self.config.vehicle.spectator_mode:
+            vehicle_transform = self.vehicle.vehicle.get_transform()
+            self.spectator.set_transform(
+                carla.Transform(vehicle_transform.location + carla.Location(x=-8, z=4), carla.Rotation(pitch=-15))
+            )
 
-    def run(self, run_name:str, spectator_mode:Optional[bool]=None):
-        self.__warmup_ticks()
-        self.__clear_outdir(run_name=run_name)
-
+    def custom_control(self, spectator_mode):
         control = carla.VehicleControl()
         for i in tqdm(range(1000), "Collecting"):
             if i < 1_000:
-                control.throttle = 0.5
-                control.steer = 0
+                control.throttle, control.steer = 0.5, 0
             elif i < 1_500:
-                control.throttle = 0.3
-                control.steer = -0.3
+                control.throttle, control.steer = 0.3, -0.3
             elif i < 5_000:
-                control.throttle = 0.3
-                control.steer = 0.3
-            # else:
-            #     control.throttle = 0
-            #     control.brake = 0.5
+                control.throttle, control.steer = 0.3, 0.3
+            else:
+                control.throttle = 0
+                control.brake = 0.5
+            self.vehicle.vehicle.apply_control(control)
 
-            
-            self.vehicle.apply_control(control)
-
-            # Attach spectator camera. 
-            if spectator_mode or self.config.vehicle.spectator_mode:
-                vehicle_transform = self.vehicle.get_transform()
-                self.spectator.set_transform(
-                    carla.Transform(vehicle_transform.location + carla.Location(x=-8, z=4), carla.Rotation(pitch=-15))
-                )
+            self.update_spectator(spectator_mode)
             self.world.tick()
 
+    def run(self, run_name:str, spectator_mode:Optional[bool]=None, autopilot:Optional[bool]=None):
+        self.__warmup_ticks()
+        self.__clear_outdir(run_name=run_name)
+
+        if autopilot or self.config.vehicle.autopilot:
+            print("Autopilot is enabled..")
+            with self.vehicle.autopilot():
+                for _ in tqdm(range(1000), "Collecting"):
+                    self.update_spectator(spectator_mode)
+                    self.world.tick()
+        else: 
+            print("It is better to override the default custom_control function")
+            self.custom_control(spectator_mode)
+
+            
         # Wait until queue on thread is empty
-        self._frames_queue.put(None)  # Poison pill pattern
+        self._frames_queue.put(None)  # Poison pill pattern, Stoping the queue
         self._writer_thread.join()  # block main thread and Let writer thread finish first
 
         run_path = self.output_path / run_name
@@ -143,7 +151,7 @@ class DataCollector():
 
         h, w, _ = cv.imread(frames[0]).shape
         video_writer = cv.VideoWriter(str(export_path / "run_video.mp4"), cv.VideoWriter_fourcc(*"mp4v"), 20, (w, h))
-        for f in frames: video_writer.write(cv.imread(f))
+        for f in frames: video_writer.write(cv.imread(f, cv.IMREAD_COLOR))
         video_writer.release()
 
         print(f"Saved {len(frames)} frames to {export_path}")

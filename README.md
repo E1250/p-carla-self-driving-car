@@ -18,3 +18,5 @@ The solution is two things here, either filtering data later, or just wait coupl
 also it was about creating the yaml file, i created it and my question were should i use settings as a defual value? or pass them as i was advised to do so. 
 
 now after almost finishing everything, i noticed some frames are being dropped, after some testing and checking, it was related to rgb.save_to_disk. it was blocking as it takes sometimes, and cause some images to drop, now we need what is called Queue, it is a list but it lets more than one worker to adjust it. 
+
+Note that after rendering, i tried both, CV for rendering, and Carla, Carla was faster. 

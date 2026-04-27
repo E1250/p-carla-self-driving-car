@@ -2,4 +2,6 @@
 
 [X] Next time, implement run in data collector, then collect more data as advised, then attach the spectator into the car. 
 
-[ ] Implement and collect also frames, rbg, make sure both have the same timestamp
+[X] Implement and collect also frames, rbg, make sure both have the same timestamp
+
+[ ] Now add an easy way to switch between autopilot, and hardcoded drive, use `with`. with config

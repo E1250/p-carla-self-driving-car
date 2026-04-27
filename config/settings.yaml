@@ -1,13 +1,14 @@
 carla_client:
-  no_rendering_mode: True  # true, false
-  synchronous_mode: True  # true, false
-  carla_connection_timeout: 10
-  fixed_delta_seconds: 0.05  # Float
   carla_client_port: 2000
-  cv_render_debug: False  # true, false
+  fixed_delta_seconds: 0.05  # Float
+  carla_connection_timeout: 10
+  no_rendering_mode: False  # [true, false]  - On testing, i found this is faster than cv_render_debug
+  synchronous_mode: True  # [true, false] - Keep it as it is
+  cv_render_debug: False  # [true, false]
 
 vehicle:
   vehicle_blueprint_id: "vehicle.tesla.model3"
-  spectator_mode: False  # true, false
-  warmup_ticks: 100
   output_dir: "data/"
+  warmup_ticks: 100
+  spectator_mode: True  # [true, false] - Keep it
+  autopilot: True # [true, false]
