@@ -14,6 +14,8 @@ import cv2 as cv
 from tqdm import tqdm
 import numpy as np
 
+from utils.utils import frames_to_video_generator, merge_and_export_df
+
 class DataCollector():
     def __init__(self, world, vehicle:Vehicle, cfg:Settings):
         self.config=cfg
@@ -33,6 +35,7 @@ class DataCollector():
 
     def collect_imu(self, imu_data:carla.libcarla.ServerSideSensor):
         """Exact data being collected"""
+        velocity = self.vehicle.vehicle.get_velocity()
         self.imu_collected_data.append({
             'timestamp': imu_data.timestamp,
             'acc_x': imu_data.accelerometer.x,
@@ -41,6 +44,8 @@ class DataCollector():
             'gyro_x': imu_data.gyroscope.x,
             'gyro_y': imu_data.gyroscope.y,
             'gyro_z': imu_data.gyroscope.z,
+            'v_x': velocity.x,
+            'v_y': velocity.y
         })
 
     def collect_rgb(self, rgb_data:carla.libcarla.ServerSideSensor):
@@ -89,7 +94,7 @@ class DataCollector():
         # Create experiment folder.
         os.makedirs(str(self.output_path / run_name), exist_ok=True)
 
-    def update_spectator(self, spectator_mode:Optional[bool]=None):
+    def __update_spectator(self, spectator_mode:Optional[bool]=None):
         # Attach spectator camera. 
         if spectator_mode or self.config.vehicle.spectator_mode:
             vehicle_transform = self.vehicle.vehicle.get_transform()
@@ -98,6 +103,7 @@ class DataCollector():
             )
 
     def custom_control(self, i):
+        #TODO thinking of moving to vehicle class. 
         control = self.vehicle.vehicle_control
         if i < 100:
             control.throttle, control.steer = 0.5, 0
@@ -108,7 +114,6 @@ class DataCollector():
         else:
             control.throttle = 0
             control.brake = 0.5
-            
         return control
 
     def run(self, run_name:str, num_ticks:int=1000, spectator_mode:Optional[bool]=None, autopilot:Optional[bool]=None):
@@ -119,14 +124,14 @@ class DataCollector():
             print("Autopilot is enabled..")
             with self.vehicle.autopilot():
                 for _ in tqdm(range(num_ticks), "Collecting"):
-                    self.update_spectator(spectator_mode)
+                    self.__update_spectator(spectator_mode)
                     self.world.tick()
         else: 
             print("It is better to override the default custom_control function")
             for i in tqdm(range(num_ticks), "Collecting"):
                 control = self.custom_control(i)
                 self.vehicle.vehicle.apply_control(control)
-                self.update_spectator(spectator_mode)
+                self.__update_spectator(spectator_mode)
                 self.world.tick()
 
         # Wait until queue on thread is empty
@@ -134,24 +139,11 @@ class DataCollector():
         self._writer_thread.join()  # block main thread and Let writer thread finish first
 
         run_path = self.output_path / run_name
-        self.export_fuse_sensor(export_path=run_path, export_name=f"{run_name}.parquet")
-        self.__cv_video_renderer(export_path=run_path)  # Export frames into a video
-
-    def export_fuse_sensor(self, export_path:Path, export_name:str, tolerance=0.05):
-        imu_df = pd.DataFrame(self.imu_collected_data).sort_values("timestamp")
-        camera_df = pd.DataFrame(self.rgb_collected_data).sort_values("timestamp")
-
-        merged_df = pd.merge_asof(imu_df, camera_df, on="timestamp", tolerance=tolerance, direction="nearest")
-        print(merged_df.info())
-        merged_df.to_parquet(str(export_path / export_name), index=False)
-
-    def __cv_video_renderer(self, export_path:Path):
-        frames_dir = str(self.output_path / "frames")
-        frames = sorted(glob.glob(os.path.join(frames_dir, "*.png")))
-
-        h, w, _ = cv.imread(frames[0]).shape
-        video_writer = cv.VideoWriter(str(export_path / "run_video.mp4"), cv.VideoWriter_fourcc(*"mp4v"), 20, (w, h))
-        for f in frames: video_writer.write(cv.imread(f, cv.IMREAD_COLOR))
-        video_writer.release()
-
-        print(f"Saved {len(frames)} frames to {export_path}")
+        merge_and_export_df(
+            df1=self.imu_collected_data,
+            df2=self.rgb_collected_data, 
+            export_path=run_path,
+            export_name=f"{run_name}.parquet")
+        frames_to_video_generator(
+            frames_dir=self.output_path / "frames",
+            export_path=run_path)

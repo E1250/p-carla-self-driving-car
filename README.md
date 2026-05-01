@@ -20,3 +20,8 @@ also it was about creating the yaml file, i created it and my question were shou
 now after almost finishing everything, i noticed some frames are being dropped, after some testing and checking, it was related to rgb.save_to_disk. it was blocking as it takes sometimes, and cause some images to drop, now we need what is called Queue, it is a list but it lets more than one worker to adjust it. 
 
 Note that after rendering, i tried both, CV for rendering, and Carla, Carla was faster. 
+
+
+<iframe src="https://www.desmos.com/calculator/ns6z4xc57x?embed" width="500" height="500" style="border: 1px solid #ccc" frameborder=0></iframe>
+
+In PINNs, are can't use `ReLU` as an activation function, because its second derivative is always 0. but we use `tanh` or `sin`.

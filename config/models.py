@@ -12,5 +12,6 @@ class VehicleModel(BaseModel):
     vehicle_blueprint_id: str
     spectator_mode: bool
     warmup_ticks: int
+    ticks: int
     output_dir: str
     autopilot: bool

@@ -10,7 +10,7 @@ class CarlaClient():
         
     def __init__(self, cfg:Settings):
         self.config = cfg
-
+        
         # Connect to Carla sim
         self.client = carla.Client("localhost", self.config.carla_client.carla_client_port)
         self.client.set_timeout(self.config.carla_client.carla_connection_timeout)

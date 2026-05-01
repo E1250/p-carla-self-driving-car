@@ -10,5 +10,6 @@ vehicle:
   vehicle_blueprint_id: "vehicle.tesla.model3"
   output_dir: "data/"
   warmup_ticks: 100
+  ticks: 1000
   spectator_mode: True  # [true, false] - Keep it
-  autopilot: False # [true, false]
+  autopilot: True # [true, false]
