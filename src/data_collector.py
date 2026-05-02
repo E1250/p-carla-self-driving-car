@@ -38,7 +38,7 @@ class DataCollector():
     def collect_imu(self, imu_data:carla.libcarla.ServerSideSensor):
         """Exact data being collected"""
         velocity = self.vehicle.vehicle.get_velocity()
-        yaw = self.vehicle.vehicle.get_transform().rotation.yaw
+        yaw = self.vehicle.vehicle.get_transform().rotation.yaw  # In degrees 
         self.imu_collected_data.append({
             'timestamp': imu_data.timestamp,
             'acc_x': imu_data.accelerometer.x,
@@ -49,7 +49,7 @@ class DataCollector():
             'gyro_z': imu_data.gyroscope.z,
             'v_x': velocity.x,
             'v_y': velocity.y,
-            "yaw": yaw
+            "yaw": np.radians(yaw)
         })
 
     def collect_rgb(self, rgb_data:carla.libcarla.ServerSideSensor):

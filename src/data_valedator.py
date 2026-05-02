@@ -44,11 +44,12 @@ def validate_run(df, output_dir:str, cfg:Settings):
         "ticks": cfg.vehicle.ticks,
         "warmup_ticks": cfg.vehicle.warmup_ticks,
         "autopilot": cfg.vehicle.autopilot,
-        "nan_count_post_merge": df.isna().sum().sum()  # High value means timing and merge issue. 
+        "nan_count_post_merge": int(df.isna().sum().sum())  # High value means timing and merge issue. 
         # "raw_df_description": df.describe().to_dict(),
         # "clean_df_description": clean_df.describe().to_dict(),
     }
 
+    clean_df.to_parquet(str(output_dir / "clean_data.parquet"), index=False)
     with open(str(output_dir / "summary.yaml"), "w") as f:
         yaml.dump(checks, f, default_flow_style=False)
 

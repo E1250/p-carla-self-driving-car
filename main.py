@@ -24,8 +24,7 @@ tesla_vehicle = Vehicle(world=world, cfg=config)
 imu_sensor = tesla_vehicle.create_and_attach("sensor.other.imu")
 rgb_sensor = tesla_vehicle.create_and_attach("sensor.camera.rgb")
 carla_client.traffic_manager.ignore_lights_percentage(tesla_vehicle.vehicle, 100)  # Ignore traffics
-carla_client.traffic_manager.ignore_stop_signs_percentage(tesla_vehicle.vehicle, 100)  # Ignore stop signs
-
+carla_client.traffic_manager.ignore_signs_percentage(tesla_vehicle.vehicle, 100)  # Ignore stop signs
 carla_client.traffic_manager.vehicle_percentage_speed_difference(tesla_vehicle.vehicle, -5) # increasing speed trying to take corners aggressively
 
 data_collector = DataCollector(world, tesla_vehicle, cfg=config)
