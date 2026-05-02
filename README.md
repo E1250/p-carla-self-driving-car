@@ -26,4 +26,4 @@ Note that after rendering, i tried both, CV for rendering, and Carla, Carla was 
 
 In PINNs, are can't use `ReLU` as an activation function, because its second derivative is always 0. but we use `tanh` or `sin`.
 
-Regarding the data i am trying to collect, we need the car to corner aggressively. 
+Regarding the data i am trying to collect, we need the car to corner aggressively. we want the car to drive and take corners, not just drive strait. 

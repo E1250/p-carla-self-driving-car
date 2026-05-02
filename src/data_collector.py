@@ -15,7 +15,7 @@ from tqdm import tqdm
 import numpy as np
 
 from utils.utils import frames_to_video_generator, merge_and_export_df
-from utils.validation_run import validate_run
+from src.data_valedator import validate_run
 
 class DataCollector():
     def __init__(self, world, vehicle:Vehicle, cfg:Settings):
@@ -38,6 +38,7 @@ class DataCollector():
     def collect_imu(self, imu_data:carla.libcarla.ServerSideSensor):
         """Exact data being collected"""
         velocity = self.vehicle.vehicle.get_velocity()
+        yaw = self.vehicle.vehicle.get_transform().rotation.yaw
         self.imu_collected_data.append({
             'timestamp': imu_data.timestamp,
             'acc_x': imu_data.accelerometer.x,
@@ -47,7 +48,8 @@ class DataCollector():
             'gyro_y': imu_data.gyroscope.y,
             'gyro_z': imu_data.gyroscope.z,
             'v_x': velocity.x,
-            'v_y': velocity.y
+            'v_y': velocity.y,
+            "yaw": yaw
         })
 
     def collect_rgb(self, rgb_data:carla.libcarla.ServerSideSensor):

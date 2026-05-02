@@ -3,6 +3,7 @@ import yaml
 import matplotlib.pyplot as plt
 
 from config.settings import Settings
+import math
 
 class RunValidator:
     def __init__(self):
@@ -23,7 +24,10 @@ def validate_run(df, output_dir:str, cfg:Settings):
     MAX_SLIP = 0.5   # rad - estimated range, Peak at ~0.1-0.2 rad
     
     df["speed"] = np.sqrt(df['v_x'] ** 2 + df["v_y"] ** 2)  # Pythagorean theorem  a^2 + b^2 = c^2, as both a, b are vectors. 
-    df["slip_angle"] = np.arctan2(df["v_y"], df['v_x'])   # getting the angle between valocity vector and forward direction.
+    
+    v_long = df["v_x"] * np.cos(df["yaw"]) + df["v_y"] * np.sin(df["yaw"])
+    v_lat = -df["v_x"] * np.sin(df["yaw"]) + df["v_y"] * np.cos(df["yaw"])
+    df["slip_angle"] = np.arctan2(v_lat, v_long)   # getting the angle between valocity vector and forward direction.
 
     print(df.describe())
     print(df.info())
@@ -40,6 +44,7 @@ def validate_run(df, output_dir:str, cfg:Settings):
         "ticks": cfg.vehicle.ticks,
         "warmup_ticks": cfg.vehicle.warmup_ticks,
         "autopilot": cfg.vehicle.autopilot,
+        "nan_count_post_merge": df.isna().sum().sum()  # High value means timing and merge issue. 
         # "raw_df_description": df.describe().to_dict(),
         # "clean_df_description": clean_df.describe().to_dict(),
     }
