@@ -15,6 +15,9 @@ class CarlaClient():
         self.client = carla.Client("localhost", self.config.carla_client.carla_client_port)
         self.client.set_timeout(self.config.carla_client.carla_connection_timeout)
 
+         # Traffic settings
+        self.traffic_manager = self.client.get_trafficmanager()
+
         self.world = self.client.get_world()
         self.world_name = self.world.get_map().name
 
@@ -22,6 +25,8 @@ class CarlaClient():
         self.world_settings = self.world.get_settings()
         self.__set_world_settings()
         self.world.apply_settings(self.world_settings)
+
+       
 
     def info(self) -> None:
         """Printing the world name, and the list of supported sensors in this world

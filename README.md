@@ -25,3 +25,5 @@ Note that after rendering, i tried both, CV for rendering, and Carla, Carla was 
 <iframe src="https://www.desmos.com/calculator/ns6z4xc57x?embed" width="500" height="500" style="border: 1px solid #ccc" frameborder=0></iframe>
 
 In PINNs, are can't use `ReLU` as an activation function, because its second derivative is always 0. but we use `tanh` or `sin`.
+
+Regarding the data i am trying to collect, we need the car to corner aggressively. 

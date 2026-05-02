@@ -10,8 +10,6 @@ def merge_and_export_df(df1:pd.DataFrame, df2:pd.DataFrame, export_path:Path, ex
     df2 = pd.DataFrame(df2).sort_values("timestamp")
 
     merged_df = pd.merge_asof(df1, df2, on="timestamp", tolerance=tolerance, direction="nearest")
-    print(merged_df.describe())
-    print(merged_df.info())
     merged_df.to_parquet(str(export_path / export_name), index=False)
     return merged_df
 

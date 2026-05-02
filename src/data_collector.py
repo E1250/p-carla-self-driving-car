@@ -15,6 +15,7 @@ from tqdm import tqdm
 import numpy as np
 
 from utils.utils import frames_to_video_generator, merge_and_export_df
+from utils.validation_run import validate_run
 
 class DataCollector():
     def __init__(self, world, vehicle:Vehicle, cfg:Settings):
@@ -32,6 +33,7 @@ class DataCollector():
             daemon=True  # Close when app close.
         )
         self._writer_thread.start()  # Starting the thread.
+
 
     def collect_imu(self, imu_data:carla.libcarla.ServerSideSensor):
         """Exact data being collected"""
@@ -116,19 +118,21 @@ class DataCollector():
             control.brake = 0.5
         return control
 
-    def run(self, run_name:str, num_ticks:int=1000, spectator_mode:Optional[bool]=None, autopilot:Optional[bool]=None):
+    def run(self, run_name:str, num_ticks:Optional[int]=None, spectator_mode:Optional[bool]=None, autopilot:Optional[bool]=None):
         self.__warmup_ticks()
         self.__clear_outdir(run_name=run_name)
+
+        ticks = num_ticks or self.config.vehicle.ticks
 
         if autopilot or self.config.vehicle.autopilot:
             print("Autopilot is enabled..")
             with self.vehicle.autopilot():
-                for _ in tqdm(range(num_ticks), "Collecting"):
+                for _ in tqdm(range(ticks), "Collecting"):
                     self.__update_spectator(spectator_mode)
                     self.world.tick()
         else: 
             print("It is better to override the default custom_control function")
-            for i in tqdm(range(num_ticks), "Collecting"):
+            for i in tqdm(range(ticks), "Collecting"):
                 control = self.custom_control(i)
                 self.vehicle.vehicle.apply_control(control)
                 self.__update_spectator(spectator_mode)
@@ -139,11 +143,12 @@ class DataCollector():
         self._writer_thread.join()  # block main thread and Let writer thread finish first
 
         run_path = self.output_path / run_name
-        merge_and_export_df(
+        merged_df = merge_and_export_df(
             df1=self.imu_collected_data,
             df2=self.rgb_collected_data, 
             export_path=run_path,
             export_name=f"{run_name}.parquet")
+        validate_run(merged_df, run_path, self.config)
         frames_to_video_generator(
             frames_dir=self.output_path / "frames",
             export_path=run_path)
